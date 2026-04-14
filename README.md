@@ -29,7 +29,7 @@ Instead of a single-pass answer, Agent Forest coordinates a "forest" of 4 to 32 
 - Python 3.8+
 - An API key for an OpenAI-compatible provider (e.g., OpenAI, Anthropic via proxy, Grok, etc.)
 
-### Installation
+### Install as a Global Skill
 
 1. Clone the repository:
    ```bash
@@ -37,29 +37,52 @@ Instead of a single-pass answer, Agent Forest coordinates a "forest" of 4 to 32 
    cd agent-forest
    ```
 
-2. Set up your environment:
+2. Install for Codex, Claude Code, or both:
+   ```bash
+   ./install.sh
+   ```
+
+   Target a single platform if you want:
+   ```bash
+   ./install.sh --target codex
+   ./install.sh --target claude
+   ```
+
+   On Windows PowerShell:
+   ```powershell
+   .\install.ps1
+   .\install.ps1 --target codex
+   .\install.ps1 --target claude
+   ```
+
+3. Set up your environment:
    ```bash
    export AGENT_FOREST_API_KEY="your-api-key-here"
    ```
 
-3. Prepare your config:
-   ```bash
-   cp assets/agent-forest.config.example.json assets/agent-forest.config.json
-   ```
+4. Update the installed config:
+   - Codex: `~/.codex/skills/agent-forest/assets/agent-forest.config.json`
+   - Claude Code: `~/.claude/skills/agent-forest/assets/agent-forest.config.json`
+
+   If you reinstall over an existing copy, use `--force`.
+
+5. Invoke the skill:
+   - Codex: let it auto-discover the installed skill, or reference `$agent-forest`
+   - Claude Code: invoke `/agent-forest` or let Claude load it when relevant
 
 ## 📖 Usage
 
 ### Validate Configuration
 Ensure your setup is correct before running a forest:
 ```bash
-python scripts/agent_forest.py validate-config --config assets/agent-forest.config.json
+python ~/.codex/skills/agent-forest/scripts/agent_forest.py validate-config --config ~/.codex/skills/agent-forest/assets/agent-forest.config.json
 ```
 
 ### Run a Research Pass (Preset)
 Use the `research-squad-4` preset for a balanced investigation:
 ```bash
-python scripts/agent_forest.py run \
-  --config assets/agent-forest.config.json \
+python ~/.codex/skills/agent-forest/scripts/agent_forest.py run \
+  --config ~/.codex/skills/agent-forest/assets/agent-forest.config.json \
   --payload-file path/to/your-task.json \
   --preset research-squad-4 \
   --pretty
@@ -68,8 +91,8 @@ python scripts/agent_forest.py run \
 ### Inspect Requests (Dry Run)
 Verify the agent prompts without calling the API:
 ```bash
-python scripts/agent_forest.py run \
-  --config assets/agent-forest.config.json \
+python ~/.codex/skills/agent-forest/scripts/agent_forest.py run \
+  --config ~/.codex/skills/agent-forest/assets/agent-forest.config.json \
   --payload-file path/to/your-task.json \
   --dry-run \
   --pretty

@@ -29,7 +29,7 @@
 - Python 3.8+
 - OpenAI 兼容提供商的 API 密钥（如 OpenAI, Anthropic 代理, Grok 等）
 
-### 安装
+### 安装为全局技能
 
 1. 克隆仓库：
    ```bash
@@ -37,29 +37,52 @@
    cd agent-forest
    ```
 
-2. 设置环境变量：
+2. 安装到 Codex、Claude Code，或同时安装：
+   ```bash
+   ./install.sh
+   ```
+
+   只安装单个平台也可以：
+   ```bash
+   ./install.sh --target codex
+   ./install.sh --target claude
+   ```
+
+   Windows PowerShell:
+   ```powershell
+   .\install.ps1
+   .\install.ps1 --target codex
+   .\install.ps1 --target claude
+   ```
+
+3. 设置环境变量：
    ```bash
    export AGENT_FOREST_API_KEY="your-api-key-here"
    ```
 
-3. 准备配置文件：
-   ```bash
-   cp assets/agent-forest.config.example.json assets/agent-forest.config.json
-   ```
+4. 修改安装后的配置文件：
+   - Codex：`~/.codex/skills/agent-forest/assets/agent-forest.config.json`
+   - Claude Code：`~/.claude/skills/agent-forest/assets/agent-forest.config.json`
+
+   如果目标位置已经存在，重新安装时加上 `--force`。
+
+5. 调用方式：
+   - Codex：让它自动发现这个 skill，或者直接引用 `$agent-forest`
+   - Claude Code：直接用 `/agent-forest`，或让 Claude 在相关任务中自动加载
 
 ## 📖 使用方法
 
 ### 验证配置
 在运行森林之前，确保您的设置正确：
 ```bash
-python scripts/agent_forest.py validate-config --config assets/agent-forest.config.json
+python ~/.codex/skills/agent-forest/scripts/agent_forest.py validate-config --config ~/.codex/skills/agent-forest/assets/agent-forest.config.json
 ```
 
 ### 运行研究任务（使用预设）
 使用 `research-squad-4` 预设进行均衡的调查：
 ```bash
-python scripts/agent_forest.py run \
-  --config assets/agent-forest.config.json \
+python ~/.codex/skills/agent-forest/scripts/agent_forest.py run \
+  --config ~/.codex/skills/agent-forest/assets/agent-forest.config.json \
   --payload-file path/to/your-task.json \
   --preset research-squad-4 \
   --pretty
@@ -68,8 +91,8 @@ python scripts/agent_forest.py run \
 ### 检查请求（干跑/预览）
 验证代理提示词而不实际调用 API：
 ```bash
-python scripts/agent_forest.py run \
-  --config assets/agent-forest.config.json \
+python ~/.codex/skills/agent-forest/scripts/agent_forest.py run \
+  --config ~/.codex/skills/agent-forest/assets/agent-forest.config.json \
   --payload-file path/to/your-task.json \
   --dry-run \
   --pretty
