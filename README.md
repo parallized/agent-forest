@@ -18,6 +18,28 @@ Instead of a single-pass answer, Agent Forest coordinates a "forest" of 4 to 32 
 - **Large-Output Safety**: In `auto` stdout mode, oversized JSON results are saved to a temp file and replaced with a compact stdout summary plus file path.
 - **Agent-Led Research**: When the external runtime supports web search or retrieval, the forest is expected to find its own evidence rather than only reading a source pack pre-collected by the launcher.
 
+## 📺 Showcase: Standard vs. Agent Forest
+
+Compare the depth and structure between a standard single-pass response and an orchestrated multi-agent "forest" investigation.
+
+### Case 1: Complex Strategy Analysis (World of Warcraft 12.0)
+Standard GPT response vs. an 8-agent forest with specialized personas (tank, healer, DPS, analyst).
+
+![Comparison WoW](references/noforest-wow.webp)
+*Standard single-agent response.*
+
+![Comparison Forest WoW](references/forest-wow.webp)
+*Agent Forest (8 agents) with persona synthesis and structured evidence.*
+
+### Case 2: Deep Investigative Research (Happiness & Initiative)
+Standard GPT response vs. a 24-agent forest mapping historical perspectives.
+
+![Comparison World](references/noforest-world.webp)
+*Standard single-agent response.*
+
+![Comparison Forest World](references/forest-world.webp)
+*Agent Forest (24 agents) with broad perspective synthesis.*
+
 ## 🛠 Project Structure
 
 - `agents/`: Logic for agent behavior and persona management.
