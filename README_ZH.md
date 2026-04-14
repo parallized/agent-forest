@@ -13,6 +13,7 @@
 - **灵活编排**：支持动态内联代理定义或持久、可重用的预设。
 - **严格综合**：在代理报告（外部）和最终综合（本地）之间保持清晰界限，防止“幻觉共识”。
 - **兼容 OpenAI**：支持任何遵循 OpenAI 聊天补全标准的 API 提供商。
+- **实时进度日志**：可选的 `--progress` 会实时显示已完成、运行中、等待中、失败的代理数量，同时保持 `stdout` 的最终 JSON 输出不变。
 
 ## 🛠 项目结构
 
@@ -94,6 +95,7 @@ python ~/.codex/skills/agent-forest/scripts/agent_forest.py run \
   --config ~/.codex/skills/agent-forest/assets/agent-forest.config.json \
   --payload-file path/to/your-task.json \
   --preset research-squad-4 \
+  --progress \
   --pretty
 ```
 
@@ -106,6 +108,8 @@ python ~/.codex/skills/agent-forest/scripts/agent_forest.py run \
   --dry-run \
   --pretty
 ```
+
+`--progress` 会把实时状态写到 `stderr`，因此你可以边看执行进度，边保留 `stdout` 中可解析的最终 JSON。
 
 ## 🧠 载荷示例 (Payload)
 

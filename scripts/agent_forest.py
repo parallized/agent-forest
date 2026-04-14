@@ -9,6 +9,7 @@ import os
 import re
 import sys
 import time
+import threading
 import urllib.error
 import urllib.request
 from pathlib import Path
@@ -480,15 +481,110 @@ def chat_completion_request(
     }
 
 
-def run_forest(config: dict[str, Any], plan: dict[str, Any]) -> dict[str, Any]:
+class ProgressReporter:
+    def __init__(self, total_agents: int, enabled: bool) -> None:
+        self.total_agents = total_agents
+        self.enabled = enabled
+        self.started_agents = 0
+        self.completed_agents = 0
+        self.succeeded_agents = 0
+        self.failed_agents = 0
+        self.lock = threading.Lock()
+
+    def _emit(self, message: str) -> None:
+        if not self.enabled:
+            return
+        print(f"[agent-forest] {message}", file=sys.stderr, flush=True)
+
+    def _pending_agents(self) -> int:
+        return self.total_agents - self.started_agents
+
+    def _running_agents(self) -> int:
+        return self.started_agents - self.completed_agents
+
+    def start_run(self, max_workers: int) -> None:
+        self._emit(
+            f"starting forest with {self.total_agents} agents; max_parallel={max_workers}"
+        )
+
+    def agent_started(self, agent: dict[str, Any]) -> None:
+        if not self.enabled:
+            return
+        with self.lock:
+            self.started_agents += 1
+            self._emit(
+                f"running {agent['index']}/{self.total_agents} {agent['name']} | "
+                f"completed={self.completed_agents} succeeded={self.succeeded_agents} "
+                f"failed={self.failed_agents} running={self._running_agents()} "
+                f"pending={self._pending_agents()}"
+            )
+
+    def agent_finished(self, agent: dict[str, Any], status: str, duration_seconds: float) -> None:
+        if not self.enabled:
+            return
+        with self.lock:
+            self.completed_agents += 1
+            if status == "succeeded":
+                self.succeeded_agents += 1
+            else:
+                self.failed_agents += 1
+            self._emit(
+                f"{status} {agent['index']}/{self.total_agents} {agent['name']} "
+                f"in {duration_seconds:.2f}s | completed={self.completed_agents} "
+                f"succeeded={self.succeeded_agents} failed={self.failed_agents} "
+                f"running={self._running_agents()} pending={self._pending_agents()}"
+            )
+
+    def finish_run(self, duration_seconds: float) -> None:
+        self._emit(
+            f"completed forest in {duration_seconds:.2f}s | "
+            f"completed={self.completed_agents} succeeded={self.succeeded_agents} "
+            f"failed={self.failed_agents}"
+        )
+
+
+def execute_agent_request(
+    config: dict[str, Any],
+    api_key: str,
+    agent: dict[str, Any],
+    progress: ProgressReporter,
+) -> dict[str, Any]:
+    started_at = time.time()
+    progress.agent_started(agent)
+
+    try:
+        response = chat_completion_request(config, api_key, agent["request_body"])
+    except Exception as exc:  # noqa: BLE001
+        duration_seconds = time.time() - started_at
+        progress.agent_finished(agent, "failed", duration_seconds)
+        return {
+            "status": "failed",
+            "error": str(exc),
+            "duration_seconds": round(duration_seconds, 3),
+        }
+
+    duration_seconds = time.time() - started_at
+    progress.agent_finished(agent, "succeeded", duration_seconds)
+    return {
+        "status": "succeeded",
+        "response": response,
+        "duration_seconds": round(duration_seconds, 3),
+    }
+
+
+def run_forest(
+    config: dict[str, Any], plan: dict[str, Any], show_progress: bool = False
+) -> dict[str, Any]:
     api_key = resolve_api_key(config)
     started_at = time.time()
     max_workers = min(config["forest"]["max_parallel_requests"], len(plan["agents"]))
     results: list[dict[str, Any]] = []
+    progress = ProgressReporter(plan["forest_size"], show_progress)
+    progress.start_run(max_workers)
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
         future_map = {
-            executor.submit(chat_completion_request, config, api_key, agent["request_body"]): agent
+            executor.submit(execute_agent_request, config, api_key, agent, progress): agent
             for agent in plan["agents"]
         }
 
@@ -503,7 +599,14 @@ def run_forest(config: dict[str, Any], plan: dict[str, Any]) -> dict[str, Any]:
                 "model": agent["model"],
             }
             try:
-                response = future.result()
+                outcome = future.result()
+            except Exception as exc:  # noqa: BLE001
+                result.update({"status": "failed", "error": str(exc)})
+                results.append(result)
+                continue
+
+            if outcome["status"] == "succeeded":
+                response = outcome["response"]
                 result.update(
                     {
                         "status": "succeeded",
@@ -512,13 +615,15 @@ def run_forest(config: dict[str, Any], plan: dict[str, Any]) -> dict[str, Any]:
                         "usage": response.get("usage"),
                     }
                 )
-            except Exception as exc:  # noqa: BLE001
-                result.update({"status": "failed", "error": str(exc)})
+            else:
+                result.update({"status": "failed", "error": outcome["error"]})
             results.append(result)
 
     results.sort(key=lambda item: item["index"])
     succeeded = sum(1 for item in results if item["status"] == "succeeded")
     failed = len(results) - succeeded
+    duration_seconds = round(time.time() - started_at, 3)
+    progress.finish_run(duration_seconds)
 
     return {
         "summary": {
@@ -526,7 +631,7 @@ def run_forest(config: dict[str, Any], plan: dict[str, Any]) -> dict[str, Any]:
             "forest_size": plan["forest_size"],
             "succeeded_agents": succeeded,
             "failed_agents": failed,
-            "duration_seconds": round(time.time() - started_at, 3),
+            "duration_seconds": duration_seconds,
         },
         "agents": results,
     }
@@ -609,7 +714,7 @@ def command_run(args: argparse.Namespace) -> int:
             "agents": plan["agents"],
         }
     else:
-        output = run_forest(config, plan)
+        output = run_forest(config, plan, show_progress=args.progress)
 
     rendered = json.dumps(output, ensure_ascii=False, indent=2 if args.pretty else None)
 
@@ -672,6 +777,11 @@ def build_parser() -> argparse.ArgumentParser:
     run_parser.add_argument("--output", help="Optional output file for the JSON result")
     run_parser.add_argument("--pretty", action="store_true", help="Pretty-print the JSON result")
     run_parser.add_argument("--dry-run", action="store_true", help="Compile requests without calling the API")
+    run_parser.add_argument(
+        "--progress",
+        action="store_true",
+        help="Emit live progress logs to stderr while agents run",
+    )
     run_parser.set_defaults(func=command_run)
 
     return parser

@@ -1,6 +1,10 @@
+import contextlib
 import importlib.util
+import io
+import json
 import tempfile
 import unittest
+from unittest import mock
 from pathlib import Path
 
 
@@ -116,6 +120,59 @@ class AgentForestTests(unittest.TestCase):
             self.assertEqual(saved["api"]["base_url"], "https://example.com/v1/chat/completions")
             self.assertEqual(saved["api"]["model"], "demo-model")
             self.assertEqual(saved["api"]["api_key"], "sk-demo-12345678")
+
+    def test_run_command_can_emit_live_progress_without_breaking_json_output(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            config_path = Path(temp_dir) / "agent-forest.config.json"
+            config = agent_forest.load_json(CONFIG_PATH)
+            config["api"]["base_url"] = "https://example.com/v1/chat/completions"
+            config["api"]["api_key"] = "sk-demo-12345678"
+            agent_forest.write_json(config_path, config)
+
+            payload = {
+                "task": "Assess this proposal.",
+                "agents": [
+                    {"persona_ref": "evidence-hunter"},
+                    {"persona_ref": "systems-thinker"},
+                    {"persona_ref": "risk-auditor"},
+                    {"persona_ref": "contrarian"},
+                ],
+            }
+
+            stdout_buffer = io.StringIO()
+            stderr_buffer = io.StringIO()
+
+            with (
+                mock.patch.object(
+                    agent_forest,
+                    "chat_completion_request",
+                    return_value={
+                        "content": "report body",
+                        "finish_reason": "stop",
+                        "usage": {"total_tokens": 12},
+                    },
+                ),
+                contextlib.redirect_stdout(stdout_buffer),
+                contextlib.redirect_stderr(stderr_buffer),
+            ):
+                exit_code = agent_forest.main(
+                    [
+                        "run",
+                        "--config",
+                        str(config_path),
+                        "--payload-json",
+                        json.dumps(payload),
+                        "--progress",
+                    ]
+                )
+
+            self.assertEqual(exit_code, 0)
+            self.assertIn("starting forest with 4 agents", stderr_buffer.getvalue())
+            self.assertIn("completed forest", stderr_buffer.getvalue())
+
+            rendered = json.loads(stdout_buffer.getvalue())
+            self.assertEqual(rendered["summary"]["succeeded_agents"], 4)
+            self.assertEqual(rendered["summary"]["failed_agents"], 0)
 
 
 if __name__ == "__main__":

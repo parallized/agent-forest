@@ -51,6 +51,17 @@ python scripts/agent_forest.py configure \
   --clear-api-key
 ```
 
+For live runs from chat, pair the executor with `--progress` so the terminal can surface real-time agent state without corrupting the final JSON payload:
+
+```bash
+python scripts/agent_forest.py run \
+  --config assets/agent-forest.config.json \
+  --payload-file /tmp/forest-payload.json \
+  --preset research-squad-4 \
+  --progress \
+  --pretty
+```
+
 ## Forest
 
 - `min_agents` and `max_agents` should stay within `4-32`

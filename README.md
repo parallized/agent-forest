@@ -13,6 +13,7 @@ Instead of a single-pass answer, Agent Forest coordinates a "forest" of 4 to 32 
 - **Flexible Orchestration**: Choose between dynamic inline agent definitions or persistent, reusable presets.
 - **Strict Synthesis**: Maintains a clear boundary between agent reports (external) and final synthesis (local), preventing "hallucinated consensus."
 - **OpenAI-Compatible**: Works with any API provider following the OpenAI chat completion standard.
+- **Live Progress Logs**: Optional `--progress` output shows completed, running, pending, and failed agents in real time while preserving JSON output on `stdout`.
 
 ## 🛠 Project Structure
 
@@ -94,6 +95,7 @@ python ~/.codex/skills/agent-forest/scripts/agent_forest.py run \
   --config ~/.codex/skills/agent-forest/assets/agent-forest.config.json \
   --payload-file path/to/your-task.json \
   --preset research-squad-4 \
+  --progress \
   --pretty
 ```
 
@@ -106,6 +108,8 @@ python ~/.codex/skills/agent-forest/scripts/agent_forest.py run \
   --dry-run \
   --pretty
 ```
+
+`--progress` writes live status logs to `stderr`, so you can watch the forest run without breaking the final JSON on `stdout`.
 
 ## 🧠 Payload Example
 

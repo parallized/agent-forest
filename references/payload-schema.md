@@ -106,5 +106,6 @@ python scripts/agent_forest.py run \
   --config assets/agent-forest.config.example.json \
   --payload-file /tmp/forest-payload.json \
   --preset research-squad-4 \
+  --progress \
   --pretty
 ```

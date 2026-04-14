@@ -52,6 +52,9 @@ Skip this skill for small edits, simple factual questions, or tasks where a sing
 - Prefer inline agents when the task is unusual or needs bespoke viewpoints.
 - Treat every external agent response as a report, not the final answer.
 - After the reports return, explicitly compare, reconcile, and synthesize them in the chat model.
+- For live runs, prefer `python scripts/agent_forest.py run --progress ...` so the user can see real execution status while the forest is running.
+- If your terminal tool supports streaming sessions, keep the run attached and relay short status updates using the actual counts for completed, running, pending, and failed agents.
+- Tell the user the planned forest size before launch, then keep progress updates anchored to real agent events instead of estimated percentages.
 
 ## Commands
 
@@ -86,6 +89,7 @@ python scripts/agent_forest.py run \
   --config assets/agent-forest.config.example.json \
   --payload-file /tmp/forest-payload.json \
   --preset research-squad-4 \
+  --progress \
   --pretty
 ```
 
@@ -95,6 +99,7 @@ Run with fully dynamic agents:
 python scripts/agent_forest.py run \
   --config assets/agent-forest.config.example.json \
   --payload-file /tmp/forest-payload.json \
+  --progress \
   --pretty
 ```
 
@@ -107,6 +112,8 @@ python scripts/agent_forest.py run \
   --dry-run \
   --pretty
 ```
+
+`--progress` writes live status logs to `stderr` and keeps the final JSON result on `stdout`, so progress monitoring does not break downstream parsing.
 
 ## Payload Guidance
 
