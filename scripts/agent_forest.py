@@ -52,6 +52,12 @@ DEFAULT_CONFIG: dict[str, Any] = {
             "Work independently, stay within your assigned perspective, "
             "and produce a self-contained report."
         ),
+        "research_contract": (
+            "When your runtime includes web search, browsing, or retrieval tools, "
+            "use them to gather your own evidence instead of assuming the launcher "
+            "already collected the full source pack. Prefer distinct sources and "
+            "note any retrieval limitations."
+        ),
         "report_contract": (
             "Return a concrete report with clear assumptions, direct conclusions, "
             "and supporting reasoning. Do not pretend to be the final synthesizer "
@@ -289,6 +295,7 @@ def build_messages(
     output_format = payload.get("output_format") or config["reporting"]["default_output_format"]
     constraints = payload.get("constraints") or []
     context = payload.get("context")
+    research_mode = payload.get("research_mode") or "agent-led"
 
     if not isinstance(report_sections, list) or not all(isinstance(item, str) for item in report_sections):
         raise ConfigError("report_sections must be an array of strings")
@@ -296,8 +303,15 @@ def build_messages(
         raise ConfigError("constraints must be an array of strings")
     if context is not None and not isinstance(context, str):
         raise ConfigError("context must be a string")
+    if research_mode not in {"agent-led", "hybrid", "shared-context"}:
+        raise ConfigError("research_mode must be one of: agent-led, hybrid, shared-context")
 
-    system_chunks = [prompts.get("system_prefix", ""), prompts.get("report_contract", ""), agent.get("system_prompt", "")]
+    system_chunks = [
+        prompts.get("system_prefix", ""),
+        prompts.get("research_contract", ""),
+        prompts.get("report_contract", ""),
+        agent.get("system_prompt", ""),
+    ]
     system_content = "\n\n".join(chunk.strip() for chunk in system_chunks if chunk and chunk.strip())
 
     lines = [
@@ -321,8 +335,40 @@ def build_messages(
         ]
     )
 
+    lines.extend(["", f"Research mode: {research_mode}"])
+    if research_mode == "agent-led":
+        lines.extend(
+            [
+                "Primary evidence approach:",
+                "- Gather your own evidence independently.",
+                "- If web search, browsing, or retrieval tools are available in your runtime, use them.",
+                "- Prefer sources, angles, and examples that are not just a rehash of the launcher context.",
+                "- If external retrieval is unavailable, continue with the task and explicitly note that limitation.",
+            ]
+        )
+    elif research_mode == "hybrid":
+        lines.extend(
+            [
+                "Primary evidence approach:",
+                "- Start from any shared context, but do not stop there.",
+                "- If web search, browsing, or retrieval tools are available in your runtime, expand and verify with your own sources.",
+                "- Use shared context as seed material, not the complete evidence base.",
+            ]
+        )
+    else:
+        lines.extend(
+            [
+                "Primary evidence approach:",
+                "- Treat the shared context as the primary evidence pack for this run.",
+                "- If tools are available, use external search only to verify critical claims or fill major gaps.",
+            ]
+        )
+
     if context:
-        lines.extend(["", "Shared context:", context])
+        if research_mode == "shared-context":
+            lines.extend(["", "Shared context (primary evidence pack):", context])
+        else:
+            lines.extend(["", "Shared context (seed context, not the full source pack):", context])
 
     if constraints:
         lines.extend(["", "Constraints:"])

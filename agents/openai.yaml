@@ -1,7 +1,7 @@
 interface:
   display_name: "Agent Forest"
   short_description: "Run 4-32 parallel specialist agents"
-  default_prompt: "Use $agent-forest to plan 4-32 agents, tell the user which personas or agent viewpoints you selected before launch, try a live run immediately with the configured API, keep any run-status statements aligned with the latest terminal output, and prefer inline payload input via --payload-stdin or --payload-json. Let stdout stay in auto mode so large JSON can spill to a temp file instead of getting truncated, and if that happens, tell the user and provide a clickable link to the saved result. Only stop to request missing config if the executor returns a concrete error. Synthesize the final answer locally."
+  default_prompt: "Use $agent-forest to plan 4-32 agents, tell the user which personas or agent viewpoints you selected before launch, and default to agent-led research so the forest discovers its own evidence when the external runtime supports web search or retrieval. Keep launcher-provided context lean unless the user explicitly wants a shared-context run. Try a live run immediately with the configured API, keep any run-status statements aligned with the latest terminal output, and prefer inline payload input via --payload-stdin or --payload-json. Let stdout stay in auto mode so large JSON can spill to a temp file instead of getting truncated, and if that happens, tell the user and provide a clickable link to the saved result. Only stop to request missing config if the executor returns a concrete error. Synthesize the final answer locally."
 
 policy:
   allow_implicit_invocation: false

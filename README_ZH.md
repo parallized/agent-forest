@@ -16,6 +16,7 @@
 - **实时进度日志**：可选的 `--progress` 会实时显示已完成、运行中、等待中、失败的代理数量，同时保持 `stdout` 的最终 JSON 输出不变。
 - **人格可见性**：在真正开跑前，skill 会先告诉你本次选用了哪些人格或 agent 视角。
 - **大结果防截断**：在 `auto` 输出模式下，过大的 JSON 结果会自动写入临时文件，`stdout` 只保留摘要和文件路径。
+- **森林自主研究**：当外部 agent 运行时支持联网搜索或检索时，默认由森林自己分头找资料，而不是只阅读发射者预先收集好的资料包。
 
 ## 🛠 项目结构
 
@@ -99,7 +100,7 @@ python ~/.codex/skills/agent-forest/scripts/agent_forest.py run \
 JSON
 ```
 
-只有在实际报错之后，再根据错误补配置即可。对话驱动的运行优先用 `--payload-stdin` 或 `--payload-json`，不要为了凑参数先在磁盘上落临时 payload 文件。除非你明确需要完整 stdout，否则保持 `--stdout-mode auto`。`validate-config` 更适合排查问题时使用：
+只有在实际报错之后，再根据错误补配置即可。对话驱动的运行优先用 `--payload-stdin` 或 `--payload-json`，不要为了凑参数先在磁盘上落临时 payload 文件。除非你明确需要完整 stdout，否则保持 `--stdout-mode auto`。如果 agent 运行时支持联网搜索或检索，尽量只传入内部事实、约束和任务框架，让森林自己分头取材。`validate-config` 更适合排查问题时使用：
 ```bash
 python ~/.codex/skills/agent-forest/scripts/agent_forest.py validate-config \
   --config ~/.codex/skills/agent-forest/assets/agent-forest.config.json
@@ -140,7 +141,8 @@ python ~/.codex/skills/agent-forest/scripts/agent_forest.py run \
 ```json
 {
   "task": "我们是否应该将核心数据库从 PostgreSQL 迁移到分布式 NoSQL 解决方案？",
-  "context": "我们目前处理 10k RPS，数据集大小为 2TB，每月增长 10%。",
+  "research_mode": "agent-led",
+  "context": "仅提供内部事实：我们目前处理 10k RPS，数据集大小为 2TB，每月增长 10%。",
   "report_sections": ["执行摘要", "技术可行性", "运营风险", "成本分析"]
 }
 ```

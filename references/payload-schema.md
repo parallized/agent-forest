@@ -12,18 +12,26 @@ For chat-driven runs, prefer `--payload-stdin` or `--payload-json` so you do not
 
 - `preset`: preset name if you want the payload itself to choose one
 - `context`: shared background for all agents
+- `research_mode`: one of `agent-led`, `hybrid`, or `shared-context` (defaults to `agent-led`)
 - `constraints`: array of rules or evaluation criteria
 - `report_sections`: array of section names expected in each report
 - `output_format`: usually `markdown`
 - `model`: run-wide model override
 - `agents`: inline dynamic agents for this run
 
+`research_mode` controls where evidence comes from:
+
+- `agent-led`: agents should gather their own evidence when web search or retrieval tools are available
+- `hybrid`: agents should start from shared context but expand and verify with their own retrieval
+- `shared-context`: treat launcher-provided context as the main evidence pack, with only limited verification
+
 ## Dynamic Agents Example
 
 ```json
 {
   "task": "Evaluate whether we should launch the new agent-forest workflow this week.",
-  "context": "We already have a planning model in the main chat window. Only the sub-agent reports should use the external API.",
+  "research_mode": "agent-led",
+  "context": "Internal context only: the main chat model will synthesize later, and engineering time is limited.",
   "constraints": [
     "Call out hidden operational risk.",
     "Assume engineering time is limited.",
@@ -69,6 +77,7 @@ For chat-driven runs, prefer `--payload-stdin` or `--payload-json` so you do not
 ```json
 {
   "task": "Assess the proposal from multiple stable viewpoints.",
+  "research_mode": "agent-led",
   "constraints": [
     "Use concise markdown.",
     "Surface contradictions explicitly."
@@ -97,7 +106,8 @@ For chat-driven runs, prefer `--payload-stdin` or `--payload-json` so you do not
 ```json
 {
   "task": "Review the decision from our default research squad.",
-  "context": "The chat model will synthesize the final answer after the reports come back."
+  "research_mode": "agent-led",
+  "context": "Internal framing only: the chat model will synthesize the final answer after the reports come back."
 }
 ```
 
@@ -114,7 +124,8 @@ python scripts/agent_forest.py run \
 <<'JSON'
 {
   "task": "Review the decision from our default research squad.",
-  "context": "The chat model will synthesize the final answer after the reports come back."
+  "research_mode": "agent-led",
+  "context": "Internal framing only: the chat model will synthesize the final answer after the reports come back."
 }
 JSON
 ```

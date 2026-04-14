@@ -27,6 +27,7 @@
   },
   "prompts": {
     "system_prefix": "You are one specialized member of a parallel agent forest. Work independently, stay within your assigned perspective, and produce a self-contained report.",
+    "research_contract": "When your runtime includes web search, browsing, or retrieval tools, use them to gather your own evidence instead of assuming the launcher already collected the full source pack. Prefer distinct sources and note any retrieval limitations.",
     "report_contract": "Return a concrete report with clear assumptions, direct conclusions, and supporting reasoning. Do not pretend to be the final synthesizer for the user."
   },
   "persona_library": {

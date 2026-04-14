@@ -16,6 +16,7 @@ Instead of a single-pass answer, Agent Forest coordinates a "forest" of 4 to 32 
 - **Live Progress Logs**: Optional `--progress` output shows completed, running, pending, and failed agents in real time while preserving JSON output on `stdout`.
 - **Persona Visibility**: Before launch, the skill reports which personas or agent viewpoints were selected for the run.
 - **Large-Output Safety**: In `auto` stdout mode, oversized JSON results are saved to a temp file and replaced with a compact stdout summary plus file path.
+- **Agent-Led Research**: When the external runtime supports web search or retrieval, the forest is expected to find its own evidence rather than only reading a source pack pre-collected by the launcher.
 
 ## 🛠 Project Structure
 
@@ -99,7 +100,7 @@ python ~/.codex/skills/agent-forest/scripts/agent_forest.py run \
 JSON
 ```
 
-If something is actually missing, use the concrete error to decide the next step. For chat-driven runs, prefer `--payload-stdin` or `--payload-json` so you do not create throwaway payload files. Leave `--stdout-mode` on `auto` unless you explicitly need full JSON on stdout. `validate-config` is mainly for troubleshooting:
+If something is actually missing, use the concrete error to decide the next step. For chat-driven runs, prefer `--payload-stdin` or `--payload-json` so you do not create throwaway payload files. Leave `--stdout-mode` on `auto` unless you explicitly need full JSON on stdout. When your agent runtime supports web search or retrieval, prefer a lean payload and let the forest gather distinct evidence on its own. `validate-config` is mainly for troubleshooting:
 ```bash
 python ~/.codex/skills/agent-forest/scripts/agent_forest.py validate-config \
   --config ~/.codex/skills/agent-forest/assets/agent-forest.config.json
@@ -140,7 +141,8 @@ A typical payload defines the task and the desired report structure:
 ```json
 {
   "task": "Should we migrate our core database from PostgreSQL to a distributed NoSQL solution?",
-  "context": "We are currently handling 10k RPS with a 2TB dataset growing at 10% monthly.",
+  "research_mode": "agent-led",
+  "context": "Internal facts only: we are currently handling 10k RPS with a 2TB dataset growing at 10% monthly.",
   "report_sections": ["Executive Summary", "Technical Feasibility", "Operational Risks", "Cost Analysis"]
 }
 ```

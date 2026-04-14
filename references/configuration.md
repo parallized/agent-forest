@@ -32,6 +32,8 @@ Supported fields:
 
 The bundled example sets `"stream": false` because the provided endpoint defaults to SSE streaming. The executor can parse both regular JSON and `text/event-stream`, but disabling streaming gives simpler responses when the provider honors it.
 
+If your provider supports web search, browsing, or retrieval tools through request payload fields, put those provider-specific settings in `api.request_defaults`. Agent Forest already defaults its prompt posture to agent-led research, so once the runtime exposes search tools, the external agents will be nudged to gather their own evidence rather than only reading launcher-supplied context.
+
 ## Conversation-Friendly Updates
 
 The runtime includes a config mutation command:
@@ -69,6 +71,8 @@ JSON
 ```
 
 If a large run spills to a temp file, stdout will contain a compact JSON summary with the saved file path under `stdout.full_output_file`.
+
+For evidence collection, prefer `research_mode: "agent-led"` unless you intentionally want to provide a curated shared source pack. Use `hybrid` when agents should start from your context but still expand and verify with their own retrieval, and use `shared-context` only when the launcher should remain the main source provider.
 
 Use `validate-config` when you specifically want to troubleshoot configuration, not as a mandatory preflight for every run:
 

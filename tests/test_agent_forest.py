@@ -80,6 +80,28 @@ class AgentForestTests(unittest.TestCase):
         self.assertIn("Evaluate the rollout plan.", first_messages[1]["content"])
         self.assertIn("Judgment", first_messages[1]["content"])
         self.assertIn("Surface hidden risk.", first_messages[1]["content"])
+        self.assertIn("Research mode: agent-led", first_messages[1]["content"])
+        self.assertIn("Gather your own evidence independently.", first_messages[1]["content"])
+        self.assertIn("seed context, not the full source pack", first_messages[1]["content"])
+        self.assertIn("web search, browsing, or retrieval tools", first_messages[0]["content"])
+
+    def test_build_messages_can_switch_to_shared_context_mode(self):
+        payload = {
+            "task": "Review the launch brief.",
+            "context": "Use only this curated internal brief unless a claim obviously needs verification.",
+            "research_mode": "shared-context",
+            "agents": [
+                {"persona_ref": "evidence-hunter"},
+                {"persona_ref": "systems-thinker"},
+                {"persona_ref": "risk-auditor"},
+                {"persona_ref": "contrarian"},
+            ],
+        }
+        plan = agent_forest.prepare_run(self.config, payload, None)
+        first_messages = plan["agents"][0]["request_body"]["messages"]
+        self.assertIn("Research mode: shared-context", first_messages[1]["content"])
+        self.assertIn("Shared context (primary evidence pack):", first_messages[1]["content"])
+        self.assertIn("use external search only to verify critical claims", first_messages[1]["content"])
 
     def test_parse_sse_response_collects_content_chunks(self):
         raw = "\n".join(

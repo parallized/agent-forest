@@ -37,6 +37,7 @@ Skip this skill for small edits, simple factual questions, or tasks where a sing
 4. Prepare a JSON payload containing:
    - `task`
    - optional `context`
+   - optional `research_mode`
    - optional `constraints`
    - optional `report_sections`
    - either `agents` or a `preset`
@@ -52,6 +53,7 @@ Skip this skill for small edits, simple factual questions, or tasks where a sing
 - Only ask the user for input when the executor proves something is actually missing, such as an API key, base URL, or task detail.
 - For chat-driven runs, do not create payload temp files unless the user explicitly asks for saved artifacts. Prefer `--payload-stdin` first, then `--payload-json`.
 - For result files, prefer stdout by default, but allow the runtime to spill oversized JSON into a temp file when needed to avoid transport truncation.
+- Default research posture to `research_mode: "agent-led"`. When the external agent runtime supports web search, browsing, or retrieval, let the forest gather its own evidence instead of front-loading source collection in the launcher.
 
 ## Execution Rules
 
@@ -64,6 +66,7 @@ Skip this skill for small edits, simple factual questions, or tasks where a sing
 - For live runs, prefer `python scripts/agent_forest.py run --progress ...` so the user can see real execution status while the forest is running.
 - If your terminal tool supports streaming sessions, keep the run attached and relay short status updates using the actual counts for completed, running, pending, and failed agents.
 - Tell the user the planned forest size before launch, and explicitly report which personas or agent viewpoints were selected for this run. Include the persona names, and include roles or goals when that adds clarity.
+- When research-capable agents are available, keep launcher-provided context lean. Pass framing, constraints, or proprietary facts, but do not pre-chew the whole public research packet unless the user explicitly wants a shared-context run.
 - Keep progress updates anchored to real agent events instead of estimated percentages.
 - Never describe the forest as "starting", "running", or "waiting" after the terminal has already emitted `completed forest` or the shell command has exited successfully. At that point, switch to finished-state wording and continue with synthesis or follow-up research.
 - If the runtime switches to summary stdout and saves the full result to a temp file, tell the user that happened and include a clickable file link to the saved JSON.
@@ -156,6 +159,8 @@ Read these only when needed:
 - Payload schema and examples: `references/payload-schema.md`
 
 Good payloads are explicit about the task, evidence standard, and report shape. Keep synthesis instructions out of the external agents unless the user explicitly wants one agent to act as a recommendation voice. Final synthesis still happens locally.
+
+By default, treat the forest as the primary research engine. If the external agents support web search or retrieval, let them fan out and discover different evidence on their own. Use `context` for seed facts, proprietary constraints, or a starting frame, not as the default replacement for independent research. Only switch to `research_mode: "shared-context"` when you intentionally want the launcher to provide the main source pack.
 
 ## Conversation Configuration
 
