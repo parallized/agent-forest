@@ -8,6 +8,7 @@ import json
 import os
 import re
 import sys
+import tempfile
 import time
 import threading
 import urllib.error
@@ -18,6 +19,7 @@ from typing import Any
 
 GLOBAL_MIN_AGENTS = 4
 GLOBAL_MAX_AGENTS = 32
+DEFAULT_MAX_STDOUT_BYTES = 64 * 1024
 
 DEFAULT_CONFIG: dict[str, Any] = {
     "api": {
@@ -80,6 +82,11 @@ def load_json(path: Path) -> dict[str, Any]:
 def write_json(path: Path, data: dict[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+
+
+def write_text(path: Path, content: str) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(content, encoding="utf-8")
 
 
 def deep_merge(base: dict[str, Any], override: dict[str, Any]) -> dict[str, Any]:
@@ -642,6 +649,57 @@ def run_forest(
     }
 
 
+def summarize_agents_for_stdout(output: dict[str, Any]) -> list[dict[str, Any]]:
+    summarized: list[dict[str, Any]] = []
+    for agent in output.get("agents", []):
+        item: dict[str, Any] = {}
+        for key in ("index", "id", "name", "role", "goal", "model", "status"):
+            value = agent.get(key)
+            if value is not None:
+                item[key] = value
+        if agent.get("error"):
+            item["error"] = agent["error"]
+        summarized.append(item)
+    return summarized
+
+
+def create_temp_output_path(directory: str | None) -> Path:
+    if directory:
+        base_dir = Path(directory).expanduser()
+    else:
+        base_dir = Path(tempfile.gettempdir()) / "agent-forest"
+    base_dir.mkdir(parents=True, exist_ok=True)
+    timestamp = time.strftime("%Y%m%d-%H%M%S")
+    return (base_dir / f"agent-forest-result-{timestamp}-{os.getpid()}-{time.time_ns()}.json").resolve()
+
+
+def render_json(data: dict[str, Any], pretty: bool) -> str:
+    return json.dumps(data, ensure_ascii=False, indent=2 if pretty else None) + "\n"
+
+
+def build_stdout_summary(
+    output: dict[str, Any],
+    full_output_path: Path,
+    rendered_bytes: int,
+    reason: str,
+    max_stdout_bytes: int | None,
+    pretty: bool,
+) -> str:
+    payload: dict[str, Any] = {
+        "summary": output.get("summary", {}),
+        "agents": summarize_agents_for_stdout(output),
+        "stdout": {
+            "mode": "summary",
+            "reason": reason,
+            "full_output_file": str(full_output_path),
+            "output_size_bytes": rendered_bytes,
+        },
+    }
+    if max_stdout_bytes is not None:
+        payload["stdout"]["max_stdout_bytes"] = max_stdout_bytes
+    return render_json(payload, pretty=pretty)
+
+
 def command_validate_config(args: argparse.Namespace) -> int:
     load_config(args.config)
     print(json.dumps({"status": "ok", "config": args.config}, ensure_ascii=False))
@@ -707,6 +765,8 @@ def command_list_presets(args: argparse.Namespace) -> int:
 def command_run(args: argparse.Namespace) -> int:
     _, config = load_writable_config(args.config)
     validate_config(config)
+    if args.max_stdout_bytes <= 0:
+        raise ConfigError("--max-stdout-bytes must be a positive integer")
     payload = load_payload(args)
     preset_name = args.preset or payload.get("preset")
     plan = prepare_run(config, payload, preset_name)
@@ -723,11 +783,39 @@ def command_run(args: argparse.Namespace) -> int:
     else:
         output = run_forest(config, plan, show_progress=args.progress)
 
-    rendered = json.dumps(output, ensure_ascii=False, indent=2 if args.pretty else None)
+    rendered = render_json(output, pretty=args.pretty)
+    rendered_bytes = len(rendered.encode("utf-8"))
 
+    should_summarize = False
+    summary_reason = None
+    if args.stdout_mode == "summary":
+        should_summarize = True
+        summary_reason = "stdout summary mode requested"
+    elif args.stdout_mode == "auto" and rendered_bytes > args.max_stdout_bytes:
+        should_summarize = True
+        summary_reason = "full JSON exceeded stdout size threshold"
+
+    full_output_path: Path | None = None
     if args.output:
-        Path(args.output).write_text(rendered + "\n", encoding="utf-8")
-    print(rendered)
+        full_output_path = Path(args.output).expanduser().resolve()
+        write_text(full_output_path, rendered)
+    elif should_summarize:
+        full_output_path = create_temp_output_path(args.temp_output_dir)
+        write_text(full_output_path, rendered)
+
+    if should_summarize:
+        assert full_output_path is not None
+        stdout_rendered = build_stdout_summary(
+            output,
+            full_output_path=full_output_path,
+            rendered_bytes=rendered_bytes,
+            reason=summary_reason or "stdout summary mode requested",
+            max_stdout_bytes=args.max_stdout_bytes if args.stdout_mode == "auto" else None,
+            pretty=args.pretty,
+        )
+        print(stdout_rendered, end="")
+    else:
+        print(rendered, end="")
 
     failed_agents = output.get("summary", {}).get("failed_agents", 0)
     succeeded_agents = output.get("summary", {}).get("succeeded_agents", plan["forest_size"])
@@ -789,6 +877,22 @@ def build_parser() -> argparse.ArgumentParser:
     run_parser.add_argument(
         "--output",
         help="Optional output file for the JSON result; omit for chat-driven runs unless the user wants a saved artifact",
+    )
+    run_parser.add_argument(
+        "--stdout-mode",
+        choices=["auto", "full", "summary"],
+        default="auto",
+        help="How to emit results to stdout: full JSON, compact summary, or auto-spill large JSON to a file",
+    )
+    run_parser.add_argument(
+        "--max-stdout-bytes",
+        type=int,
+        default=DEFAULT_MAX_STDOUT_BYTES,
+        help="When stdout mode is auto, spill full JSON to a file once it exceeds this byte threshold",
+    )
+    run_parser.add_argument(
+        "--temp-output-dir",
+        help="Directory for spill files when stdout mode is summary or auto spills a large result",
     )
     run_parser.add_argument("--pretty", action="store_true", help="Pretty-print the JSON result")
     run_parser.add_argument("--dry-run", action="store_true", help="Compile requests without calling the API")

@@ -14,6 +14,8 @@ Instead of a single-pass answer, Agent Forest coordinates a "forest" of 4 to 32 
 - **Strict Synthesis**: Maintains a clear boundary between agent reports (external) and final synthesis (local), preventing "hallucinated consensus."
 - **OpenAI-Compatible**: Works with any API provider following the OpenAI chat completion standard.
 - **Live Progress Logs**: Optional `--progress` output shows completed, running, pending, and failed agents in real time while preserving JSON output on `stdout`.
+- **Persona Visibility**: Before launch, the skill reports which personas or agent viewpoints were selected for the run.
+- **Large-Output Safety**: In `auto` stdout mode, oversized JSON results are saved to a temp file and replaced with a compact stdout summary plus file path.
 
 ## 🛠 Project Structure
 
@@ -88,6 +90,7 @@ Start with a real run. The executor will read `agent-forest.config.json` when pr
 python ~/.codex/skills/agent-forest/scripts/agent_forest.py run \
   --config ~/.codex/skills/agent-forest/assets/agent-forest.config.json \
   --payload-stdin \
+  --stdout-mode auto \
   --preset research-squad-4 \
   --progress \
   --pretty
@@ -96,7 +99,7 @@ python ~/.codex/skills/agent-forest/scripts/agent_forest.py run \
 JSON
 ```
 
-If something is actually missing, use the concrete error to decide the next step. For chat-driven runs, prefer `--payload-stdin` or `--payload-json` so you do not create throwaway payload files. `validate-config` is mainly for troubleshooting:
+If something is actually missing, use the concrete error to decide the next step. For chat-driven runs, prefer `--payload-stdin` or `--payload-json` so you do not create throwaway payload files. Leave `--stdout-mode` on `auto` unless you explicitly need full JSON on stdout. `validate-config` is mainly for troubleshooting:
 ```bash
 python ~/.codex/skills/agent-forest/scripts/agent_forest.py validate-config \
   --config ~/.codex/skills/agent-forest/assets/agent-forest.config.json
@@ -108,6 +111,7 @@ Use the `research-squad-4` preset for a balanced investigation:
 python ~/.codex/skills/agent-forest/scripts/agent_forest.py run \
   --config ~/.codex/skills/agent-forest/assets/agent-forest.config.json \
   --payload-stdin \
+  --stdout-mode auto \
   --preset research-squad-4 \
   --progress \
   --pretty
@@ -122,11 +126,12 @@ Verify the agent prompts without calling the API:
 python ~/.codex/skills/agent-forest/scripts/agent_forest.py run \
   --config ~/.codex/skills/agent-forest/assets/agent-forest.config.json \
   --payload-json '{"task":"Review the decision from our default research squad."}' \
+  --stdout-mode full \
   --dry-run \
   --pretty
 ```
 
-`--progress` writes live status logs to `stderr`, so you can watch the forest run without breaking the final JSON on `stdout`.
+`--progress` writes live status logs to `stderr`. In `--stdout-mode auto`, the executor keeps small JSON on `stdout`, but automatically saves oversized results to a temp file and prints a compact summary with the saved file path instead of letting the transport truncate the full report.
 
 ## 🧠 Payload Example
 

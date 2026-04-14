@@ -270,6 +270,119 @@ class AgentForestTests(unittest.TestCase):
             self.assertEqual(rendered["summary"]["succeeded_agents"], 4)
             self.assertEqual(rendered["summary"]["failed_agents"], 0)
 
+    def test_run_command_auto_spills_large_output_to_temp_file(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            config_path = Path(temp_dir) / "agent-forest.config.json"
+            spill_dir = Path(temp_dir) / "spill"
+            config = agent_forest.load_json(CONFIG_PATH)
+            config["api"]["base_url"] = "https://example.com/v1/chat/completions"
+            config["api"]["api_key"] = "sk-demo-12345678"
+            agent_forest.write_json(config_path, config)
+
+            payload = {
+                "task": "Assess this proposal.",
+                "agents": [
+                    {"persona_ref": "evidence-hunter"},
+                    {"persona_ref": "systems-thinker"},
+                    {"persona_ref": "risk-auditor"},
+                    {"persona_ref": "contrarian"},
+                ],
+            }
+
+            stdout_buffer = io.StringIO()
+
+            with (
+                mock.patch.object(
+                    agent_forest,
+                    "chat_completion_request",
+                    return_value={
+                        "content": "report body " * 100,
+                        "finish_reason": "stop",
+                        "usage": {"total_tokens": 12},
+                    },
+                ),
+                contextlib.redirect_stdout(stdout_buffer),
+            ):
+                exit_code = agent_forest.main(
+                    [
+                        "run",
+                        "--config",
+                        str(config_path),
+                        "--payload-json",
+                        json.dumps(payload),
+                        "--max-stdout-bytes",
+                        "200",
+                        "--temp-output-dir",
+                        str(spill_dir),
+                    ]
+                )
+
+            self.assertEqual(exit_code, 0)
+            rendered = json.loads(stdout_buffer.getvalue())
+            self.assertEqual(rendered["stdout"]["mode"], "summary")
+            self.assertEqual(rendered["stdout"]["reason"], "full JSON exceeded stdout size threshold")
+            full_output_path = Path(rendered["stdout"]["full_output_file"])
+            self.assertTrue(full_output_path.exists())
+            self.assertTrue(full_output_path.is_file())
+            self.assertEqual(full_output_path.parent, spill_dir.resolve())
+
+            saved = json.loads(full_output_path.read_text(encoding="utf-8"))
+            self.assertEqual(saved["summary"]["succeeded_agents"], 4)
+            self.assertEqual(len(saved["agents"]), 4)
+            self.assertIn("content", saved["agents"][0])
+
+    def test_run_command_can_force_full_stdout_even_when_large(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            config_path = Path(temp_dir) / "agent-forest.config.json"
+            config = agent_forest.load_json(CONFIG_PATH)
+            config["api"]["base_url"] = "https://example.com/v1/chat/completions"
+            config["api"]["api_key"] = "sk-demo-12345678"
+            agent_forest.write_json(config_path, config)
+
+            payload = {
+                "task": "Assess this proposal.",
+                "agents": [
+                    {"persona_ref": "evidence-hunter"},
+                    {"persona_ref": "systems-thinker"},
+                    {"persona_ref": "risk-auditor"},
+                    {"persona_ref": "contrarian"},
+                ],
+            }
+
+            stdout_buffer = io.StringIO()
+
+            with (
+                mock.patch.object(
+                    agent_forest,
+                    "chat_completion_request",
+                    return_value={
+                        "content": "report body " * 100,
+                        "finish_reason": "stop",
+                        "usage": {"total_tokens": 12},
+                    },
+                ),
+                contextlib.redirect_stdout(stdout_buffer),
+            ):
+                exit_code = agent_forest.main(
+                    [
+                        "run",
+                        "--config",
+                        str(config_path),
+                        "--payload-json",
+                        json.dumps(payload),
+                        "--stdout-mode",
+                        "full",
+                        "--max-stdout-bytes",
+                        "200",
+                    ]
+                )
+
+            self.assertEqual(exit_code, 0)
+            rendered = json.loads(stdout_buffer.getvalue())
+            self.assertEqual(rendered["summary"]["succeeded_agents"], 4)
+            self.assertNotIn("stdout", rendered)
+            self.assertIn("content", rendered["agents"][0])
+
 
 if __name__ == "__main__":
     unittest.main()

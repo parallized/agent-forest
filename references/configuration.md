@@ -53,12 +53,13 @@ python scripts/agent_forest.py configure \
   --clear-api-key
 ```
 
-For live runs from chat, pair the executor with `--progress` so the terminal can surface real-time agent state without corrupting the final JSON payload. Prefer `--payload-stdin` or `--payload-json` over writing temporary payload files:
+For live runs from chat, pair the executor with `--progress` so the terminal can surface real-time agent state without corrupting the final JSON payload. Prefer `--payload-stdin` or `--payload-json` over writing temporary payload files, and leave `--stdout-mode` on `auto` so oversized results can spill into a temp file instead of getting truncated:
 
 ```bash
 python scripts/agent_forest.py run \
   --config assets/agent-forest.config.json \
   --payload-stdin \
+  --stdout-mode auto \
   --preset research-squad-4 \
   --progress \
   --pretty
@@ -66,6 +67,8 @@ python scripts/agent_forest.py run \
 {"task":"Review the decision from our default research squad."}
 JSON
 ```
+
+If a large run spills to a temp file, stdout will contain a compact JSON summary with the saved file path under `stdout.full_output_file`.
 
 Use `validate-config` when you specifically want to troubleshoot configuration, not as a mandatory preflight for every run:
 

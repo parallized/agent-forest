@@ -50,7 +50,8 @@ Skip this skill for small edits, simple factual questions, or tasks where a sing
 - Do not gate the first attempt on `validate-config`, deep config inspection, or extra confirmation unless the user explicitly asks for that.
 - If the run fails, use the concrete error to decide the next step.
 - Only ask the user for input when the executor proves something is actually missing, such as an API key, base URL, or task detail.
-- For chat-driven runs, do not create payload or output temp files unless the user explicitly asks for saved artifacts. Prefer `--payload-stdin` first, then `--payload-json`.
+- For chat-driven runs, do not create payload temp files unless the user explicitly asks for saved artifacts. Prefer `--payload-stdin` first, then `--payload-json`.
+- For result files, prefer stdout by default, but allow the runtime to spill oversized JSON into a temp file when needed to avoid transport truncation.
 
 ## Execution Rules
 
@@ -62,8 +63,10 @@ Skip this skill for small edits, simple factual questions, or tasks where a sing
 - After the reports return, explicitly compare, reconcile, and synthesize them in the chat model.
 - For live runs, prefer `python scripts/agent_forest.py run --progress ...` so the user can see real execution status while the forest is running.
 - If your terminal tool supports streaming sessions, keep the run attached and relay short status updates using the actual counts for completed, running, pending, and failed agents.
-- Tell the user the planned forest size before launch, then keep progress updates anchored to real agent events instead of estimated percentages.
+- Tell the user the planned forest size before launch, and explicitly report which personas or agent viewpoints were selected for this run. Include the persona names, and include roles or goals when that adds clarity.
+- Keep progress updates anchored to real agent events instead of estimated percentages.
 - Never describe the forest as "starting", "running", or "waiting" after the terminal has already emitted `completed forest` or the shell command has exited successfully. At that point, switch to finished-state wording and continue with synthesis or follow-up research.
+- If the runtime switches to summary stdout and saves the full result to a temp file, tell the user that happened and include a clickable file link to the saved JSON.
 - Prefer the mutable config path `assets/agent-forest.config.json` for chat-driven runs. If it does not exist yet, the runtime will fall back to the sibling example config automatically.
 
 ## Commands
@@ -74,6 +77,7 @@ Run first with the mutable config path:
 python scripts/agent_forest.py run \
   --config assets/agent-forest.config.json \
   --payload-stdin \
+  --stdout-mode auto \
   --progress \
   --pretty
 <<'JSON'
@@ -105,6 +109,7 @@ python scripts/agent_forest.py run \
   --config assets/agent-forest.config.json \
   --payload-stdin \
   --preset research-squad-4 \
+  --stdout-mode auto \
   --progress \
   --pretty
 <<'JSON'
@@ -118,6 +123,7 @@ Run with fully dynamic agents:
 python scripts/agent_forest.py run \
   --config assets/agent-forest.config.json \
   --payload-json '{"task":"...","agents":[{"persona_ref":"evidence-hunter"},{"persona_ref":"systems-thinker"},{"persona_ref":"risk-auditor"},{"persona_ref":"contrarian"}]}' \
+  --stdout-mode auto \
   --progress \
   --pretty
 ```
@@ -128,6 +134,7 @@ Inspect the compiled requests without calling the API:
 python scripts/agent_forest.py run \
   --config assets/agent-forest.config.json \
   --payload-json '{"task":"...","agents":[{"persona_ref":"evidence-hunter"},{"persona_ref":"systems-thinker"},{"persona_ref":"risk-auditor"},{"persona_ref":"contrarian"}]}' \
+  --stdout-mode full \
   --dry-run \
   --pretty
 ```
@@ -139,7 +146,7 @@ python scripts/agent_forest.py validate-config \
   --config assets/agent-forest.config.json
 ```
 
-`--progress` writes live status logs to `stderr` and keeps the final JSON result on `stdout`, so progress monitoring does not break downstream parsing.
+`--progress` writes live status logs to `stderr`. `--stdout-mode auto` keeps full JSON on `stdout` when it is small enough, and automatically saves oversized results to a temp file while leaving a compact summary plus file path on `stdout`.
 
 ## Payload Guidance
 

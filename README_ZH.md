@@ -14,6 +14,8 @@
 - **严格综合**：在代理报告（外部）和最终综合（本地）之间保持清晰界限，防止“幻觉共识”。
 - **兼容 OpenAI**：支持任何遵循 OpenAI 聊天补全标准的 API 提供商。
 - **实时进度日志**：可选的 `--progress` 会实时显示已完成、运行中、等待中、失败的代理数量，同时保持 `stdout` 的最终 JSON 输出不变。
+- **人格可见性**：在真正开跑前，skill 会先告诉你本次选用了哪些人格或 agent 视角。
+- **大结果防截断**：在 `auto` 输出模式下，过大的 JSON 结果会自动写入临时文件，`stdout` 只保留摘要和文件路径。
 
 ## 🛠 项目结构
 
@@ -88,6 +90,7 @@
 python ~/.codex/skills/agent-forest/scripts/agent_forest.py run \
   --config ~/.codex/skills/agent-forest/assets/agent-forest.config.json \
   --payload-stdin \
+  --stdout-mode auto \
   --preset research-squad-4 \
   --progress \
   --pretty
@@ -96,7 +99,7 @@ python ~/.codex/skills/agent-forest/scripts/agent_forest.py run \
 JSON
 ```
 
-只有在实际报错之后，再根据错误补配置即可。对话驱动的运行优先用 `--payload-stdin` 或 `--payload-json`，不要为了凑参数先在磁盘上落临时 payload 文件。`validate-config` 更适合排查问题时使用：
+只有在实际报错之后，再根据错误补配置即可。对话驱动的运行优先用 `--payload-stdin` 或 `--payload-json`，不要为了凑参数先在磁盘上落临时 payload 文件。除非你明确需要完整 stdout，否则保持 `--stdout-mode auto`。`validate-config` 更适合排查问题时使用：
 ```bash
 python ~/.codex/skills/agent-forest/scripts/agent_forest.py validate-config \
   --config ~/.codex/skills/agent-forest/assets/agent-forest.config.json
@@ -108,6 +111,7 @@ python ~/.codex/skills/agent-forest/scripts/agent_forest.py validate-config \
 python ~/.codex/skills/agent-forest/scripts/agent_forest.py run \
   --config ~/.codex/skills/agent-forest/assets/agent-forest.config.json \
   --payload-stdin \
+  --stdout-mode auto \
   --preset research-squad-4 \
   --progress \
   --pretty
@@ -122,11 +126,12 @@ JSON
 python ~/.codex/skills/agent-forest/scripts/agent_forest.py run \
   --config ~/.codex/skills/agent-forest/assets/agent-forest.config.json \
   --payload-json '{"task":"Review the decision from our default research squad."}' \
+  --stdout-mode full \
   --dry-run \
   --pretty
 ```
 
-`--progress` 会把实时状态写到 `stderr`，因此你可以边看执行进度，边保留 `stdout` 中可解析的最终 JSON。
+`--progress` 会把实时状态写到 `stderr`。在 `--stdout-mode auto` 下，小结果仍然直接走 `stdout`，但过大的 JSON 会自动保存到临时文件，并在 `stdout` 留下压缩摘要和保存路径，避免传输层把完整结果截断。
 
 ## 🧠 载荷示例 (Payload)
 

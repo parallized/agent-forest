@@ -107,6 +107,7 @@ Run it with:
 python scripts/agent_forest.py run \
   --config assets/agent-forest.config.json \
   --payload-stdin \
+  --stdout-mode auto \
   --preset research-squad-4 \
   --progress \
   --pretty
