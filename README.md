@@ -22,23 +22,14 @@ Instead of a single-pass answer, Agent Forest coordinates a "forest" of 4 to 32 
 
 Compare the depth and structure between a standard single-pass response and an orchestrated multi-agent "forest" investigation.
 
-### Case 1: Complex Strategy Analysis (World of Warcraft 12.0)
-Standard GPT response vs. an 8-agent forest with specialized personas (tank, healer, DPS, analyst).
-
-![Comparison WoW](references/noforest-wow.webp)
-*Standard single-agent response.*
-
-![Comparison Forest WoW](references/forest-wow.webp)
-*Agent Forest (8 agents) with persona synthesis and structured evidence.*
-
-### Case 2: Deep Investigative Research (Happiness & Initiative)
-Standard GPT response vs. a 24-agent forest mapping historical perspectives.
-
-![Comparison World](references/noforest-world.webp)
-*Standard single-agent response.*
-
-![Comparison Forest World](references/forest-world.webp)
-*Agent Forest (24 agents) with broad perspective synthesis.*
+| Standard AI (Single Pass) | Agent Forest (Multi-Perspective) |
+| :---: | :---: |
+| **Case 1: Complex Strategy Analysis (World of Warcraft 12.0)** | |
+| ![Standard WoW](references/noforest-wow.webp) | ![Agent Forest WoW](references/forest-wow.webp) |
+| *Standard single-agent response.* | *Agent Forest (8 agents) with persona synthesis.* |
+| **Case 2: Deep Investigative Research (Happiness & Initiative)** | |
+| ![Standard World](references/noforest-world.webp) | ![Agent Forest World](references/forest-world.webp) |
+| *Standard single-agent response.* | *Agent Forest (24 agents) with broad synthesis.* |
 
 ## 🛠 Project Structure
 

@@ -22,23 +22,14 @@
 
 对比标准单次回答与经过编排的多代理“森林”调查在深度和结构上的差异。
 
-### 案例 1：复杂策略分析 (魔兽世界 12.0)
-标准 GPT 回答对比包含 8 个代理（坦克、治疗、DPS、分析师视角）的森林。
-
-![效果对比 WoW](references/noforest-wow.webp)
-*标准的单代理回答。*
-
-![效果对比 Forest WoW](references/forest-wow.webp)
-*代理森林 (8 个代理)，包含人格综合与结构化证据。*
-
-### 案例 2：深度调查研究 (幸福感与主观能动性)
-标准 GPT 回答对比映射了 24 个历史视角的代理森林。
-
-![效果对比 World](references/noforest-world.webp)
-*标准的单代理回答。*
-
-![效果对比 Forest World](references/forest-world.webp)
-*代理森林 (24 个代理)，包含广泛的视角综合。*
+| 标准回答 (Single Pass) | 代理森林 (Multi-Perspective) |
+| :---: | :---: |
+| **案例 1：复杂策略分析 (魔兽世界 12.0)** | |
+| ![效果对比 WoW](references/noforest-wow.webp) | ![效果对比 Forest WoW](references/forest-wow.webp) |
+| *标准的单代理回答。* | *代理森林 (8 个代理)，包含人格综合。* |
+| **案例 2：深度调查研究 (幸福感与主观能动性)** | |
+| ![效果对比 World](references/noforest-world.webp) | ![效果对比 Forest World](references/forest-world.webp) |
+| *标准的单代理回答。* | *代理森林 (24 个代理)，包含广泛的视角综合。* |
 
 ## 🛠 项目结构
 
