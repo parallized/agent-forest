@@ -1,0 +1,7 @@
+interface:
+  display_name: "Agent Forest"
+  short_description: "Run 4-32 parallel specialist agents"
+  default_prompt: "Use $agent-forest to plan 4-32 agents, collect their reports through the configured API, and synthesize the final answer locally."
+
+policy:
+  allow_implicit_invocation: false
