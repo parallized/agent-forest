@@ -76,6 +76,11 @@ def load_json(path: Path) -> dict[str, Any]:
     return data
 
 
+def write_json(path: Path, data: dict[str, Any]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+
+
 def deep_merge(base: dict[str, Any], override: dict[str, Any]) -> dict[str, Any]:
     merged = copy.deepcopy(base)
     for key, value in override.items():
@@ -98,6 +103,21 @@ def load_config(path: str | Path) -> dict[str, Any]:
     config = deep_merge(DEFAULT_CONFIG, raw)
     validate_config(config)
     return config
+
+
+def load_writable_config(path: str | Path) -> tuple[Path, dict[str, Any]]:
+    config_path = Path(path)
+    if config_path.exists():
+        raw = load_json(config_path)
+        return config_path, deep_merge(DEFAULT_CONFIG, raw)
+
+    example_name = config_path.name.replace(".json", ".example.json")
+    example_path = config_path.with_name(example_name)
+    if example_path.exists():
+        raw = load_json(example_path)
+        return config_path, deep_merge(DEFAULT_CONFIG, raw)
+
+    return config_path, copy.deepcopy(DEFAULT_CONFIG)
 
 
 def validate_config(config: dict[str, Any]) -> None:
@@ -151,6 +171,14 @@ def resolve_api_key(config: dict[str, Any]) -> str:
         "No API key configured. Set api.api_key or export the environment variable "
         f"{env_name!r}."
     )
+
+
+def mask_secret(secret: str | None) -> str | None:
+    if not secret:
+        return None
+    if len(secret) <= 8:
+        return "*" * len(secret)
+    return f"{secret[:4]}...{secret[-4:]}"
 
 
 def load_payload(args: argparse.Namespace) -> dict[str, Any]:
@@ -510,6 +538,46 @@ def command_validate_config(args: argparse.Namespace) -> int:
     return 0
 
 
+def command_configure(args: argparse.Namespace) -> int:
+    config_path, config = load_writable_config(args.config)
+    changed = False
+
+    if args.api_base:
+        config["api"]["base_url"] = args.api_base
+        changed = True
+    if args.model:
+        config["api"]["model"] = args.model
+        changed = True
+    if args.api_key is not None:
+        config["api"]["api_key"] = args.api_key
+        changed = True
+    if args.clear_api_key:
+        config["api"]["api_key"] = None
+        changed = True
+    if args.api_key_env:
+        config["api"]["api_key_env"] = args.api_key_env
+        changed = True
+
+    if not changed:
+        raise ConfigError("No config changes requested")
+
+    validate_config(config)
+    write_json(config_path, config)
+
+    summary = {
+        "status": "ok",
+        "config": str(config_path),
+        "api": {
+            "base_url": config["api"]["base_url"],
+            "model": config["api"]["model"],
+            "api_key": mask_secret(config["api"].get("api_key")),
+            "api_key_env": config["api"].get("api_key_env"),
+        },
+    }
+    print(json.dumps(summary, ensure_ascii=False, indent=2))
+    return 0
+
+
 def command_list_presets(args: argparse.Namespace) -> int:
     config = load_config(args.config)
     presets = []
@@ -563,6 +631,34 @@ def build_parser() -> argparse.ArgumentParser:
     validate_parser = subparsers.add_parser("validate-config", help="Validate a config file")
     validate_parser.add_argument("--config", required=True, help="Path to the JSON config file")
     validate_parser.set_defaults(func=command_validate_config)
+
+    configure_parser = subparsers.add_parser("configure", help="Persist provider settings into a config file")
+    configure_parser.add_argument("--config", required=True, help="Path to the writable JSON config file")
+    configure_parser.add_argument(
+        "--api-base",
+        "--base-url",
+        "--api-base-route",
+        dest="api_base",
+        help="Chat completions endpoint URL",
+    )
+    configure_parser.add_argument(
+        "--model",
+        "--model-name",
+        dest="model",
+        help="Model name for the external agents",
+    )
+    api_key_group = configure_parser.add_mutually_exclusive_group()
+    api_key_group.add_argument("--api-key", help="Persist a literal API key into the config file")
+    api_key_group.add_argument(
+        "--clear-api-key",
+        action="store_true",
+        help="Remove any literal API key from the config file",
+    )
+    configure_parser.add_argument(
+        "--api-key-env",
+        help="Environment variable name to prefer for the API key",
+    )
+    configure_parser.set_defaults(func=command_configure)
 
     presets_parser = subparsers.add_parser("list-presets", help="List configured presets")
     presets_parser.add_argument("--config", required=True, help="Path to the JSON config file")

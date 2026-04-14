@@ -70,6 +70,15 @@ Instead of a single-pass answer, Agent Forest coordinates a "forest" of 4 to 32 
    - Codex: let it auto-discover the installed skill, or reference `$agent-forest`
    - Claude Code: invoke `/agent-forest` or let Claude load it when relevant
 
+6. Configure the provider from conversation or CLI:
+   ```bash
+   python ~/.codex/skills/agent-forest/scripts/agent_forest.py configure \
+     --config ~/.codex/skills/agent-forest/assets/agent-forest.config.json \
+     --api-base https://ai.huan666.de/v1/chat/completions \
+     --model grok-4.20-expert \
+     --api-key your-api-key
+   ```
+
 ## 📖 Usage
 
 ### Validate Configuration

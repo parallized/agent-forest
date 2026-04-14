@@ -1,4 +1,5 @@
 import importlib.util
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -89,6 +90,32 @@ class AgentForestTests(unittest.TestCase):
         self.assertEqual(parsed["content"], "Hello world")
         self.assertEqual(parsed["finish_reason"], "stop")
         self.assertEqual(parsed["usage"]["total_tokens"], 12)
+
+    def test_configure_can_create_mutable_config_from_example(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            config_path = Path(temp_dir) / "agent-forest.config.json"
+            example_path = Path(temp_dir) / "agent-forest.config.example.json"
+            example_path.write_text(CONFIG_PATH.read_text(encoding="utf-8"), encoding="utf-8")
+
+            exit_code = agent_forest.main(
+                [
+                    "configure",
+                    "--config",
+                    str(config_path),
+                    "--api-base",
+                    "https://example.com/v1/chat/completions",
+                    "--model",
+                    "demo-model",
+                    "--api-key",
+                    "sk-demo-12345678",
+                ]
+            )
+
+            self.assertEqual(exit_code, 0)
+            saved = agent_forest.load_json(config_path)
+            self.assertEqual(saved["api"]["base_url"], "https://example.com/v1/chat/completions")
+            self.assertEqual(saved["api"]["model"], "demo-model")
+            self.assertEqual(saved["api"]["api_key"], "sk-demo-12345678")
 
 
 if __name__ == "__main__":

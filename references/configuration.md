@@ -17,6 +17,7 @@ Recommended pattern:
 
 - set `api_key_env` to an environment variable such as `AGENT_FOREST_API_KEY`
 - leave `api_key` as `null` in versioned files
+- use `agent_forest.py configure` to persist user-provided `api_key`, `model`, or `api_base` into a writable config copy
 
 Supported fields:
 
@@ -28,6 +29,27 @@ Supported fields:
 - `request_defaults`: optional extra request fields merged into every API call
 
 The bundled example sets `"stream": false` because the provided endpoint defaults to SSE streaming. The executor can parse both regular JSON and `text/event-stream`, but disabling streaming gives simpler responses when the provider honors it.
+
+## Conversation-Friendly Updates
+
+The runtime includes a config mutation command:
+
+```bash
+python scripts/agent_forest.py configure \
+  --config assets/agent-forest.config.json \
+  --api-base https://ai.huan666.de/v1/chat/completions \
+  --model grok-4.20-expert \
+  --api-key sk-...
+```
+
+You can also keep the key in an environment variable:
+
+```bash
+python scripts/agent_forest.py configure \
+  --config assets/agent-forest.config.json \
+  --api-key-env AGENT_FOREST_API_KEY \
+  --clear-api-key
+```
 
 ## Forest
 

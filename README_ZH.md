@@ -70,6 +70,15 @@
    - Codex：让它自动发现这个 skill，或者直接引用 `$agent-forest`
    - Claude Code：直接用 `/agent-forest`，或让 Claude 在相关任务中自动加载
 
+6. 也可以通过对话或命令直接配置提供商参数：
+   ```bash
+   python ~/.codex/skills/agent-forest/scripts/agent_forest.py configure \
+     --config ~/.codex/skills/agent-forest/assets/agent-forest.config.json \
+     --api-base https://ai.huan666.de/v1/chat/completions \
+     --model grok-4.20-expert \
+     --api-key your-api-key
+   ```
+
 ## 📖 使用方法
 
 ### 验证配置

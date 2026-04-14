@@ -62,6 +62,16 @@ python scripts/agent_forest.py validate-config \
   --config assets/agent-forest.config.example.json
 ```
 
+Persist API settings from the conversation:
+
+```bash
+python scripts/agent_forest.py configure \
+  --config assets/agent-forest.config.json \
+  --api-base https://ai.huan666.de/v1/chat/completions \
+  --model grok-4.20-expert \
+  --api-key sk-...
+```
+
 List available presets:
 
 ```bash
@@ -106,3 +116,11 @@ Read these only when needed:
 - Payload schema and examples: `references/payload-schema.md`
 
 Good payloads are explicit about the task, evidence standard, and report shape. Keep synthesis instructions out of the external agents unless the user explicitly wants one agent to act as a recommendation voice. Final synthesis still happens locally.
+
+## Conversation Configuration
+
+When the user provides `api_key`, `model`, or `api_base` in chat, persist them into the writable config instead of asking the user to edit JSON manually.
+
+- Prefer `assets/agent-forest.config.json` as the mutable file.
+- Keep `assets/agent-forest.config.example.json` as the checked-in template.
+- Use `configure` to update provider settings directly from the conversation.
