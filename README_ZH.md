@@ -82,10 +82,21 @@
 
 ## 📖 使用方法
 
-### 验证配置
-在运行森林之前，确保您的设置正确：
+### 默认流程：先直接运行
+先发起一次真实运行。执行器会优先读取 `agent-forest.config.json`，如果这个文件还不存在，会自动回退到同目录下的 example 配置，因此不需要先做一轮额外检查：
 ```bash
-python ~/.codex/skills/agent-forest/scripts/agent_forest.py validate-config --config ~/.codex/skills/agent-forest/assets/agent-forest.config.json
+python ~/.codex/skills/agent-forest/scripts/agent_forest.py run \
+  --config ~/.codex/skills/agent-forest/assets/agent-forest.config.json \
+  --payload-file path/to/your-task.json \
+  --preset research-squad-4 \
+  --progress \
+  --pretty
+```
+
+只有在实际报错之后，再根据错误补配置即可。`validate-config` 更适合排查问题时使用：
+```bash
+python ~/.codex/skills/agent-forest/scripts/agent_forest.py validate-config \
+  --config ~/.codex/skills/agent-forest/assets/agent-forest.config.json
 ```
 
 ### 运行研究任务（使用预设）

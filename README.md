@@ -82,10 +82,21 @@ Instead of a single-pass answer, Agent Forest coordinates a "forest" of 4 to 32 
 
 ## 📖 Usage
 
-### Validate Configuration
-Ensure your setup is correct before running a forest:
+### Default Flow: Run First
+Start with a real run. The executor will read `agent-forest.config.json` when present and fall back to the sibling example config when it is not, so you can try the workflow before doing extra setup work:
 ```bash
-python ~/.codex/skills/agent-forest/scripts/agent_forest.py validate-config --config ~/.codex/skills/agent-forest/assets/agent-forest.config.json
+python ~/.codex/skills/agent-forest/scripts/agent_forest.py run \
+  --config ~/.codex/skills/agent-forest/assets/agent-forest.config.json \
+  --payload-file path/to/your-task.json \
+  --preset research-squad-4 \
+  --progress \
+  --pretty
+```
+
+If something is actually missing, use the concrete error to decide the next step. `validate-config` is mainly for troubleshooting:
+```bash
+python ~/.codex/skills/agent-forest/scripts/agent_forest.py validate-config \
+  --config ~/.codex/skills/agent-forest/assets/agent-forest.config.json
 ```
 
 ### Run a Research Pass (Preset)

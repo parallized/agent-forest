@@ -174,6 +174,102 @@ class AgentForestTests(unittest.TestCase):
             self.assertEqual(rendered["summary"]["succeeded_agents"], 4)
             self.assertEqual(rendered["summary"]["failed_agents"], 0)
 
+    def test_run_command_can_fall_back_to_sibling_example_config(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            config_path = Path(temp_dir) / "agent-forest.config.json"
+            example_path = Path(temp_dir) / "agent-forest.config.example.json"
+            config = agent_forest.load_json(CONFIG_PATH)
+            config["api"]["base_url"] = "https://example.com/v1/chat/completions"
+            config["api"]["api_key"] = None
+            agent_forest.write_json(example_path, config)
+
+            payload = {
+                "task": "Assess this proposal.",
+                "agents": [
+                    {"persona_ref": "evidence-hunter"},
+                    {"persona_ref": "systems-thinker"},
+                    {"persona_ref": "risk-auditor"},
+                    {"persona_ref": "contrarian"},
+                ],
+            }
+
+            stdout_buffer = io.StringIO()
+
+            with (
+                mock.patch.object(
+                    agent_forest,
+                    "chat_completion_request",
+                    return_value={
+                        "content": "report body",
+                        "finish_reason": "stop",
+                        "usage": {"total_tokens": 12},
+                    },
+                ),
+                mock.patch.dict("os.environ", {"AGENT_FOREST_API_KEY": "sk-demo-12345678"}),
+                contextlib.redirect_stdout(stdout_buffer),
+            ):
+                exit_code = agent_forest.main(
+                    [
+                        "run",
+                        "--config",
+                        str(config_path),
+                        "--payload-json",
+                        json.dumps(payload),
+                    ]
+                )
+
+            self.assertEqual(exit_code, 0)
+            rendered = json.loads(stdout_buffer.getvalue())
+            self.assertEqual(rendered["summary"]["succeeded_agents"], 4)
+            self.assertEqual(rendered["summary"]["failed_agents"], 0)
+
+    def test_run_command_can_read_payload_from_stdin(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            config_path = Path(temp_dir) / "agent-forest.config.json"
+            config = agent_forest.load_json(CONFIG_PATH)
+            config["api"]["base_url"] = "https://example.com/v1/chat/completions"
+            config["api"]["api_key"] = "sk-demo-12345678"
+            agent_forest.write_json(config_path, config)
+
+            payload = {
+                "task": "Assess this proposal.",
+                "agents": [
+                    {"persona_ref": "evidence-hunter"},
+                    {"persona_ref": "systems-thinker"},
+                    {"persona_ref": "risk-auditor"},
+                    {"persona_ref": "contrarian"},
+                ],
+            }
+
+            stdout_buffer = io.StringIO()
+
+            with (
+                mock.patch.object(
+                    agent_forest,
+                    "chat_completion_request",
+                    return_value={
+                        "content": "report body",
+                        "finish_reason": "stop",
+                        "usage": {"total_tokens": 12},
+                    },
+                ),
+                mock.patch("sys.stdin", io.StringIO(json.dumps(payload))),
+                contextlib.redirect_stdout(stdout_buffer),
+            ):
+                exit_code = agent_forest.main(
+                    [
+                        "run",
+                        "--config",
+                        str(config_path),
+                        "--payload-stdin",
+                    ]
+                )
+
+            self.assertEqual(exit_code, 0)
+            rendered = json.loads(stdout_buffer.getvalue())
+            self.assertEqual(rendered["summary"]["succeeded_agents"], 4)
+            self.assertEqual(rendered["summary"]["failed_agents"], 0)
+
 
 if __name__ == "__main__":
     unittest.main()

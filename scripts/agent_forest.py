@@ -183,12 +183,17 @@ def mask_secret(secret: str | None) -> str | None:
 
 
 def load_payload(args: argparse.Namespace) -> dict[str, Any]:
-    sources = [bool(args.payload_file), bool(args.payload_json)]
+    sources = [bool(args.payload_file), bool(args.payload_json), bool(args.payload_stdin)]
     if sum(sources) != 1:
-        raise ConfigError("Provide exactly one of --payload-file or --payload-json")
+        raise ConfigError("Provide exactly one of --payload-file, --payload-json, or --payload-stdin")
 
     if args.payload_file:
         payload = load_json(Path(args.payload_file))
+    elif args.payload_stdin:
+        raw_payload = sys.stdin.read()
+        if not raw_payload.strip():
+            raise ConfigError("No payload received on stdin")
+        payload = json.loads(raw_payload)
     else:
         payload = json.loads(args.payload_json)
 
@@ -684,7 +689,8 @@ def command_configure(args: argparse.Namespace) -> int:
 
 
 def command_list_presets(args: argparse.Namespace) -> int:
-    config = load_config(args.config)
+    _, config = load_writable_config(args.config)
+    validate_config(config)
     presets = []
     for name, preset in sorted(config["presets"].items()):
         presets.append(
@@ -699,7 +705,8 @@ def command_list_presets(args: argparse.Namespace) -> int:
 
 
 def command_run(args: argparse.Namespace) -> int:
-    config = load_config(args.config)
+    _, config = load_writable_config(args.config)
+    validate_config(config)
     payload = load_payload(args)
     preset_name = args.preset or payload.get("preset")
     plan = prepare_run(config, payload, preset_name)
@@ -773,6 +780,11 @@ def build_parser() -> argparse.ArgumentParser:
     run_parser.add_argument("--config", required=True, help="Path to the JSON config file")
     run_parser.add_argument("--payload-file", help="Path to a JSON payload file")
     run_parser.add_argument("--payload-json", help="Inline JSON payload")
+    run_parser.add_argument(
+        "--payload-stdin",
+        action="store_true",
+        help="Read the JSON payload from stdin",
+    )
     run_parser.add_argument("--preset", help="Preset name to use when payload omits agents")
     run_parser.add_argument("--output", help="Optional output file for the JSON result")
     run_parser.add_argument("--pretty", action="store_true", help="Pretty-print the JSON result")

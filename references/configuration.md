@@ -1,6 +1,8 @@
 # Agent Forest Configuration
 
-`assets/agent-forest.config.example.json` is the persisted control plane for this skill.
+`assets/agent-forest.config.json` is the preferred writable control plane for this skill.
+
+If the mutable config file does not exist yet, runtime commands such as `run` and `list-presets` can fall back to the sibling `assets/agent-forest.config.example.json` file for read-only defaults. This supports a "try first, fix only what is missing" workflow.
 
 ## Top-Level Keys
 
@@ -60,6 +62,13 @@ python scripts/agent_forest.py run \
   --preset research-squad-4 \
   --progress \
   --pretty
+```
+
+Use `validate-config` when you specifically want to troubleshoot configuration, not as a mandatory preflight for every run:
+
+```bash
+python scripts/agent_forest.py validate-config \
+  --config assets/agent-forest.config.json
 ```
 
 ## Forest
