@@ -87,13 +87,16 @@
 ```bash
 python ~/.codex/skills/agent-forest/scripts/agent_forest.py run \
   --config ~/.codex/skills/agent-forest/assets/agent-forest.config.json \
-  --payload-file path/to/your-task.json \
+  --payload-stdin \
   --preset research-squad-4 \
   --progress \
   --pretty
+<<'JSON'
+{"task":"Review the decision from our default research squad."}
+JSON
 ```
 
-只有在实际报错之后，再根据错误补配置即可。`validate-config` 更适合排查问题时使用：
+只有在实际报错之后，再根据错误补配置即可。对话驱动的运行优先用 `--payload-stdin` 或 `--payload-json`，不要为了凑参数先在磁盘上落临时 payload 文件。`validate-config` 更适合排查问题时使用：
 ```bash
 python ~/.codex/skills/agent-forest/scripts/agent_forest.py validate-config \
   --config ~/.codex/skills/agent-forest/assets/agent-forest.config.json
@@ -104,10 +107,13 @@ python ~/.codex/skills/agent-forest/scripts/agent_forest.py validate-config \
 ```bash
 python ~/.codex/skills/agent-forest/scripts/agent_forest.py run \
   --config ~/.codex/skills/agent-forest/assets/agent-forest.config.json \
-  --payload-file path/to/your-task.json \
+  --payload-stdin \
   --preset research-squad-4 \
   --progress \
   --pretty
+<<'JSON'
+{"task":"Review the decision from our default research squad."}
+JSON
 ```
 
 ### 检查请求（干跑/预览）
@@ -115,7 +121,7 @@ python ~/.codex/skills/agent-forest/scripts/agent_forest.py run \
 ```bash
 python ~/.codex/skills/agent-forest/scripts/agent_forest.py run \
   --config ~/.codex/skills/agent-forest/assets/agent-forest.config.json \
-  --payload-file path/to/your-task.json \
+  --payload-json '{"task":"Review the decision from our default research squad."}' \
   --dry-run \
   --pretty
 ```

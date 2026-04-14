@@ -87,13 +87,16 @@ Start with a real run. The executor will read `agent-forest.config.json` when pr
 ```bash
 python ~/.codex/skills/agent-forest/scripts/agent_forest.py run \
   --config ~/.codex/skills/agent-forest/assets/agent-forest.config.json \
-  --payload-file path/to/your-task.json \
+  --payload-stdin \
   --preset research-squad-4 \
   --progress \
   --pretty
+<<'JSON'
+{"task":"Review the decision from our default research squad."}
+JSON
 ```
 
-If something is actually missing, use the concrete error to decide the next step. `validate-config` is mainly for troubleshooting:
+If something is actually missing, use the concrete error to decide the next step. For chat-driven runs, prefer `--payload-stdin` or `--payload-json` so you do not create throwaway payload files. `validate-config` is mainly for troubleshooting:
 ```bash
 python ~/.codex/skills/agent-forest/scripts/agent_forest.py validate-config \
   --config ~/.codex/skills/agent-forest/assets/agent-forest.config.json
@@ -104,10 +107,13 @@ Use the `research-squad-4` preset for a balanced investigation:
 ```bash
 python ~/.codex/skills/agent-forest/scripts/agent_forest.py run \
   --config ~/.codex/skills/agent-forest/assets/agent-forest.config.json \
-  --payload-file path/to/your-task.json \
+  --payload-stdin \
   --preset research-squad-4 \
   --progress \
   --pretty
+<<'JSON'
+{"task":"Review the decision from our default research squad."}
+JSON
 ```
 
 ### Inspect Requests (Dry Run)
@@ -115,7 +121,7 @@ Verify the agent prompts without calling the API:
 ```bash
 python ~/.codex/skills/agent-forest/scripts/agent_forest.py run \
   --config ~/.codex/skills/agent-forest/assets/agent-forest.config.json \
-  --payload-file path/to/your-task.json \
+  --payload-json '{"task":"Review the decision from our default research squad."}' \
   --dry-run \
   --pretty
 ```

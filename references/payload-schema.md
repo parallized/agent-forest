@@ -1,6 +1,8 @@
 # Agent Forest Payload Schema
 
-The executor expects a JSON payload passed with `--payload-file` or `--payload-json`.
+The executor expects a JSON payload passed with `--payload-file`, `--payload-json`, or `--payload-stdin`.
+
+For chat-driven runs, prefer `--payload-stdin` or `--payload-json` so you do not need to create temporary payload files on disk.
 
 ## Required Field
 
@@ -103,9 +105,15 @@ Run it with:
 
 ```bash
 python scripts/agent_forest.py run \
-  --config assets/agent-forest.config.example.json \
-  --payload-file /tmp/forest-payload.json \
+  --config assets/agent-forest.config.json \
+  --payload-stdin \
   --preset research-squad-4 \
   --progress \
   --pretty
+<<'JSON'
+{
+  "task": "Review the decision from our default research squad.",
+  "context": "The chat model will synthesize the final answer after the reports come back."
+}
+JSON
 ```

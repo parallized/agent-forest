@@ -786,7 +786,10 @@ def build_parser() -> argparse.ArgumentParser:
         help="Read the JSON payload from stdin",
     )
     run_parser.add_argument("--preset", help="Preset name to use when payload omits agents")
-    run_parser.add_argument("--output", help="Optional output file for the JSON result")
+    run_parser.add_argument(
+        "--output",
+        help="Optional output file for the JSON result; omit for chat-driven runs unless the user wants a saved artifact",
+    )
     run_parser.add_argument("--pretty", action="store_true", help="Pretty-print the JSON result")
     run_parser.add_argument("--dry-run", action="store_true", help="Compile requests without calling the API")
     run_parser.add_argument(
